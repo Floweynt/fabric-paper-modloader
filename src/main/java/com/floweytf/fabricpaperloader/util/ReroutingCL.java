@@ -1,4 +1,4 @@
-package com.floweytf.papermixinloader.util;
+package com.floweytf.fabricpaperloader.util;
 
 import java.util.Arrays;
 import java.util.HashMap;

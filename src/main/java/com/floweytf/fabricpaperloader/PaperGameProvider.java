@@ -1,8 +1,8 @@
-package com.floweytf.papermixinloader;
+package com.floweytf.fabricpaperloader;
 
-import com.floweytf.papermixinloader.paperclip.PaperclipRunner;
-import com.floweytf.papermixinloader.paperclip.VersionInfo;
-import com.floweytf.papermixinloader.util.Utils;
+import com.floweytf.fabricpaperloader.paperclip.PaperclipRunner;
+import com.floweytf.fabricpaperloader.paperclip.VersionInfo;
+import com.floweytf.fabricpaperloader.util.Utils;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

@@ -1,6 +1,5 @@
-package com.floweytf.papermixinloader.util;
+package com.floweytf.fabricpaperloader.util;
 
-import java.io.Closeable;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;

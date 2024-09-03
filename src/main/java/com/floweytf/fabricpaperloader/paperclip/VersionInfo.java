@@ -1,4 +1,4 @@
-package com.floweytf.papermixinloader.paperclip;
+package com.floweytf.fabricpaperloader.paperclip;
 
 public record VersionInfo(String version, String hash) {
     @Override

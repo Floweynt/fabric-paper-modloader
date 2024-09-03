@@ -1,5 +1,6 @@
 plugins {
     java
+    `maven-publish`
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
@@ -14,8 +15,8 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-val version = "1.0.0"
-val group = "com.floweytf.papermixinloader"
+version = "1.0.0"
+group = "com.floweytf.fabricpaperloader"
 
 val shadowImplementation: Configuration by configurations.creating
 
@@ -69,5 +70,43 @@ tasks {
 
     build {
         dependsOn(shadowJar)
+    }
+
+    jar {
+        archiveClassifier.set("slim")
+    }
+
+    shadowJar {
+        archiveClassifier.set("")
+    }
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            artifact(tasks["shadowJar"])
+            artifact(tasks["sourcesJar"])
+            artifact(tasks["javadocJar"])
+
+        }
+    }
+    repositories {
+        maven {
+            name = "MonumentaMaven"
+            url = when (version.toString().endsWith("SNAPSHOT")) {
+                true -> uri("https://maven.playmonumenta.com/snapshots")
+                false -> uri("https://maven.playmonumenta.com/releases")
+            }
+
+            credentials {
+                username = System.getenv("USERNAME")
+                password = System.getenv("TOKEN")
+            }
+        }
     }
 }

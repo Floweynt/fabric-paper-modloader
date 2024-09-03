@@ -1,7 +1,7 @@
-package com.floweytf.papermixinloader.paperclip;
+package com.floweytf.fabricpaperloader.paperclip;
 
-import com.floweytf.papermixinloader.util.ReroutingCL;
-import com.floweytf.papermixinloader.util.Utils;
+import com.floweytf.fabricpaperloader.util.ReroutingCL;
+import com.floweytf.fabricpaperloader.util.Utils;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
@@ -167,7 +167,7 @@ public class PaperclipRunner {
      * Internal, rerouted from {@code Boolean.getBoolean}.
      *
      * @param name The name of the property.
-     * @return True if it is {@code paperclip.patchonly}, otherwise {@code Boolean.getBoolean(name)}
+     * @return True if @ is {@code paperclip.patchonly}, otherwise {@code Boolean.getBoolean(name)}
      */
     public static boolean handleGetBoolean(String name) {
         if (name.equals("paperclip.patchonly")) {
