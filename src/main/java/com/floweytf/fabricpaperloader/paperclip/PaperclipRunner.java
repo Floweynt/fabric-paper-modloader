@@ -136,6 +136,9 @@ public class PaperclipRunner {
         return Optional.empty();
     }
 
+    /**
+     * Exception thrown when {@code System.exit} is called (after it has been redirected)
+     */
     private static class ExitException extends RuntimeException {
         public int exitCode;
 

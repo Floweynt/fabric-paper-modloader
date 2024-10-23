@@ -10,7 +10,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import net.fabricmc.loader.impl.FormattedException;
@@ -22,8 +21,8 @@ import net.fabricmc.loader.impl.metadata.ContactInformationImpl;
 import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.UrlUtil;
 
-/*
- * A custom GameProvider which grants Fabric Loader the necessary information to launch the app.
+/**
+ * A custom GameProvider which grants Fabric Loader the necessary information to launch paper.
  */
 public class PaperGameProvider implements GameProvider {
     public static final String SERVER_ENTRYPOINT = "org.bukkit.craftbukkit.Main";
@@ -45,7 +44,7 @@ public class PaperGameProvider implements GameProvider {
         }
     }
 
-    /*
+    /**
      * Display an identifier for the app.
      */
     @Override
@@ -53,7 +52,7 @@ public class PaperGameProvider implements GameProvider {
         return "paper";
     }
 
-    /*
+    /**
      * Display a readable name for the app.
      */
     @Override
@@ -61,7 +60,7 @@ public class PaperGameProvider implements GameProvider {
         return "Paper";
     }
 
-    /*
+    /**
      * Display a raw version string that may include build numbers or git hashes.
      */
     @Override
@@ -69,7 +68,7 @@ public class PaperGameProvider implements GameProvider {
         return versionInfo.toString();
     }
 
-    /*
+    /**
      * Display a clean version string for display.
      */
     @Override
@@ -77,25 +76,23 @@ public class PaperGameProvider implements GameProvider {
         return versionInfo.version();
     }
 
-    /*
-     * Provides built-in mods, for example a mod that represents the app itself so
-     * that mods can depend on specific versions.
+    /**
+     * Provides built-in mods (paper itself).
      */
     @Override
     public Collection<BuiltinMod> getBuiltinMods() {
         final var metadata = new BuiltinModMetadata.Builder(getGameId(), getNormalizedGameVersion())
             .setName(getGameName())
-            .addAuthor("Flowey", Map.of())
-            .addAuthor("Paper dev team", Map.of())
+            .addAuthor("Paper Dev Team", Map.of())
             .setContact(new ContactInformationImpl(Map.of()))
-            .setDescription("Fabric loader hack to load mixins on paper");
+            .setDescription("Paper minecraft server, with mixin support with fabric-loader");
 
         final var paper = new BuiltinMod(classifier.getGameJars(), metadata.build());
 
         return Collections.singletonList(paper);
     }
 
-    /*
+    /**
      * Provides the full class name of the app's entrypoint.
      */
     @Override
@@ -103,7 +100,7 @@ public class PaperGameProvider implements GameProvider {
         return SERVER_ENTRYPOINT;
     }
 
-    /*
+    /**
      * Provides the directory path where the app's resources (such as config) should
      * be located
      * This is where the `mods` folder will be located.
@@ -117,8 +114,9 @@ public class PaperGameProvider implements GameProvider {
         return getLaunchDirectory(arguments);
     }
 
-    /*
-     * Return true if the app needs to be deobfuscated.
+    /**
+     * Paper was technically obf-ed, but we can simply remap mods. Post 1.20.5, paper is mojmapped.
+     * @return {@code false}.
      */
     @Override
     public boolean isObfuscated() {
@@ -140,29 +138,33 @@ public class PaperGameProvider implements GameProvider {
         this.arguments = new Arguments();
         this.arguments.parse(args);
 
-        // Invoke paperclip
-        final var paperclipResult = PaperclipRunner.launchPaperclip();
+        classifier.addPaths(UrlUtil.LOADER_CODE_SOURCE);
+        launcher.getClassPath().forEach(classifier::addPaths);
 
-        if (paperclipResult.isEmpty())
-            return false;
+        // Skip paperclip loading i.f.f. we are in a dev env, this enables us to not have paperclip.jar in run/
+        // when doing an IDE run
+        if(!launcher.isDevelopment()) {
+            final var paperclipResult = PaperclipRunner.launchPaperclip(); // Invoke paperclip
 
-        this.versionInfo = paperclipResult.get();
-
-        // Scan runtime stuff
-        try {
-            classifier.addPaths(UrlUtil.LOADER_CODE_SOURCE);
-
-            launcher.getClassPath().forEach(classifier::addPaths);
-
-            if (!launcher.isDevelopment()) {
-                withFiles(getLaunchDirectory().resolve("libraries"), classifier::addPaths);
-                withFiles(getLaunchDirectory().resolve("versions"), classifier::addPaths); // TODO: handle this properly
+            if (paperclipResult.isEmpty()) {
+                return false;
             }
 
-            classifier.done();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            this.versionInfo = paperclipResult.get();
+
+            // Scan runtime stuff
+            try {
+                if (!launcher.isDevelopment()) {
+                    withFiles(getLaunchDirectory().resolve("libraries"), classifier::addPaths);
+                    // TODO: handle this properly
+                    withFiles(getLaunchDirectory().resolve("versions"), classifier::addPaths);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
+
+        classifier.done();
 
         return true;
     }
@@ -177,27 +179,17 @@ public class PaperGameProvider implements GameProvider {
         TRANSFORMER.locateEntrypoints(launcher, classifier.getGameJars());
     }
 
-    /*
-     * Return a GameTransformer that does extra modification on the app's JAR.
-     */
     @Override
     public GameTransformer getEntrypointTransformer() {
         return TRANSFORMER;
     }
 
-    /*
-     * Called after transformers were initialized and mods were detected and loaded
-     * (but not initialized).
-     */
     @Override
     public void unlockClassPath(FabricLauncher launcher) {
         classifier.getGameJars().forEach(launcher::addToClassPath);
         classifier.getOtherJars().forEach(launcher::addToClassPath);
     }
 
-    /*
-     * Launch the app in this function. This MUST be done via reflection.
-     */
     @Override
     public void launch(ClassLoader loader) {
         try {
@@ -218,8 +210,10 @@ public class PaperGameProvider implements GameProvider {
 
     @Override
     public String[] getLaunchArguments(boolean sanitize) {
-        if (arguments == null)
+        if (arguments == null) {
             return new String[0];
+        }
+
         return arguments.toArray();
     }
 
