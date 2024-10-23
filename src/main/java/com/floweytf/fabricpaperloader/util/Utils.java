@@ -1,7 +1,6 @@
 package com.floweytf.fabricpaperloader.util;
 
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -23,17 +22,5 @@ public class Utils {
             }).toArray(URL[]::new),
             parent
         );
-    }
-
-    public static String uniformPathString(Path path) {
-        return path.toString().replace(path.getFileSystem().getSeparator(), "/");
-    }
-
-    public static Path getJar(Class<?> clazz) {
-        try {
-            return Path.of(clazz.getProtectionDomain().getCodeSource().getLocation().toURI());
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

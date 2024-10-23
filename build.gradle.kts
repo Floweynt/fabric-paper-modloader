@@ -15,12 +15,13 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-version = "1.0.0"
+version = "1.0.1"
 group = "com.floweytf.fabricpaperloader"
 
 val shadowImplementation: Configuration by configurations.creating
 
 dependencies {
+    implementation("org.jetbrains:annotations:24.0.0")
     implementation("net.fabricmc:fabric-loader:0.16.0")
     implementation("net.fabricmc:tiny-mappings-parser:0.2.2.14")
     implementation("net.fabricmc:access-widener:2.1.0")

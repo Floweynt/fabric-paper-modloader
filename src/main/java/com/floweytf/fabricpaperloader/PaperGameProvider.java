@@ -2,14 +2,17 @@ package com.floweytf.fabricpaperloader;
 
 import com.floweytf.fabricpaperloader.paperclip.PaperclipRunner;
 import com.floweytf.fabricpaperloader.paperclip.VersionInfo;
-import com.floweytf.fabricpaperloader.util.Utils;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 import net.fabricmc.loader.impl.FormattedException;
 import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
@@ -17,6 +20,7 @@ import net.fabricmc.loader.impl.launch.FabricLauncher;
 import net.fabricmc.loader.impl.metadata.BuiltinModMetadata;
 import net.fabricmc.loader.impl.metadata.ContactInformationImpl;
 import net.fabricmc.loader.impl.util.Arguments;
+import net.fabricmc.loader.impl.util.UrlUtil;
 
 /*
  * A custom GameProvider which grants Fabric Loader the necessary information to launch the app.
@@ -28,18 +32,16 @@ public class PaperGameProvider implements GameProvider {
     private static final GameTransformer TRANSFORMER = new PaperGameTransformer();
 
     private Arguments arguments;
-    private List<Path> libraryJars;
-    private Path selfJar;
-    private Path minecraftJar;
+    private final LibraryClassifier classifier = new LibraryClassifier();
     private VersionInfo versionInfo;
 
     private static Path getLaunchDirectory(Arguments arguments) {
         return Paths.get(arguments.getOrDefault(PROPERTY_PAPER_DIRECTORY, "."));
     }
 
-    private List<Path> findFiles(Path path) throws IOException {
+    private void withFiles(Path path, Consumer<Path> consumer) throws IOException {
         try (final var files = Files.walk(path)) {
-            return files.filter(Files::isRegularFile).toList();
+            files.filter(Files::isRegularFile).forEach(consumer);
         }
     }
 
@@ -88,7 +90,7 @@ public class PaperGameProvider implements GameProvider {
             .setContact(new ContactInformationImpl(Map.of()))
             .setDescription("Fabric loader hack to load mixins on paper");
 
-        final var paper = new BuiltinMod(Collections.singletonList(minecraftJar), metadata.build());
+        final var paper = new BuiltinMod(classifier.getGameJars(), metadata.build());
 
         return Collections.singletonList(paper);
     }
@@ -148,19 +150,16 @@ public class PaperGameProvider implements GameProvider {
 
         // Scan runtime stuff
         try {
-            final var libDir = getLaunchDirectory().resolve("libraries");
+            classifier.addPaths(UrlUtil.LOADER_CODE_SOURCE);
 
-            selfJar = Utils.getJar(getClass());
+            launcher.getClassPath().forEach(classifier::addPaths);
 
-            // TODO: more robust handling of Paper's dependencies
-            libraryJars = findFiles(libDir)
-                .stream()
-                .filter(path -> {
-                    final var libIdentifier = Utils.uniformPathString(libDir.relativize(path));
-                    return !libIdentifier.startsWith("org/ow2"); // don't load asm
-                })
-                .toList();
-            minecraftJar = findFiles(getLaunchDirectory().resolve("versions")).get(0);
+            if (!launcher.isDevelopment()) {
+                withFiles(getLaunchDirectory().resolve("libraries"), classifier::addPaths);
+                withFiles(getLaunchDirectory().resolve("versions"), classifier::addPaths); // TODO: handle this properly
+            }
+
+            classifier.done();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -174,8 +173,8 @@ public class PaperGameProvider implements GameProvider {
      */
     @Override
     public void initialize(FabricLauncher launcher) {
-        launcher.setValidParentClassPath(List.of(selfJar));
-        TRANSFORMER.locateEntrypoints(launcher, List.of(minecraftJar));
+        launcher.setValidParentClassPath(classifier.getLauncherJars());
+        TRANSFORMER.locateEntrypoints(launcher, classifier.getGameJars());
     }
 
     /*
@@ -192,8 +191,8 @@ public class PaperGameProvider implements GameProvider {
      */
     @Override
     public void unlockClassPath(FabricLauncher launcher) {
-        launcher.addToClassPath(minecraftJar);
-        libraryJars.forEach(launcher::addToClassPath);
+        classifier.getGameJars().forEach(launcher::addToClassPath);
+        classifier.getOtherJars().forEach(launcher::addToClassPath);
     }
 
     /*
