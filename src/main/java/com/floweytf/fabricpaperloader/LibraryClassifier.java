@@ -12,7 +12,7 @@ import net.fabricmc.loader.impl.util.log.LogLevel;
 
 public class LibraryClassifier {
     private final Map<LibraryCategory, List<Path>> classifications = new EnumMap<>(LibraryCategory.class);
-    private final boolean shouldLog = Log.shouldLog(LogLevel.INFO, LogCategory.LIB_CLASSIFICATION);
+    private final boolean shouldLog = Log.shouldLog(LogLevel.DEBUG, LogCategory.LIB_CLASSIFICATION);
     private boolean isDone = false;
 
     public void addPaths(Path... paths) {
@@ -21,7 +21,7 @@ public class LibraryClassifier {
             classifications.computeIfAbsent(type, ignored -> new ArrayList<>()).add(path);
 
             if (shouldLog) {
-                Log.info(LogCategory.LIB_CLASSIFICATION, "classified %s as %s", path, type);
+                Log.debug(LogCategory.LIB_CLASSIFICATION, "classified %s as %s", path, type);
             }
         }
     }
