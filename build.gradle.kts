@@ -15,7 +15,7 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-version = "1.0.1"
+version = "1.0.2"
 group = "com.floweytf.fabricpaperloader"
 
 val shadowImplementation: Configuration by configurations.creating

@@ -2,9 +2,12 @@ package com.floweytf.fabricpaperloader;
 
 import com.floweytf.fabricpaperloader.paperclip.PaperclipRunner;
 import com.floweytf.fabricpaperloader.paperclip.VersionInfo;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,6 +23,8 @@ import net.fabricmc.loader.impl.metadata.BuiltinModMetadata;
 import net.fabricmc.loader.impl.metadata.ContactInformationImpl;
 import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.UrlUtil;
+import net.fabricmc.loader.impl.util.log.Log;
+import net.fabricmc.loader.impl.util.log.LogCategory;
 
 /**
  * A custom GameProvider which grants Fabric Loader the necessary information to launch paper.
@@ -65,7 +70,7 @@ public class PaperGameProvider implements GameProvider {
      */
     @Override
     public String getRawGameVersion() {
-        return versionInfo.toString();
+        return versionInfo.rawVersion();
     }
 
     /**
@@ -73,7 +78,7 @@ public class PaperGameProvider implements GameProvider {
      */
     @Override
     public String getNormalizedGameVersion() {
-        return versionInfo.version();
+        return versionInfo.normalizedVersion();
     }
 
     /**
@@ -116,6 +121,7 @@ public class PaperGameProvider implements GameProvider {
 
     /**
      * Paper was technically obf-ed, but we can simply remap mods. Post 1.20.5, paper is mojmapped.
+     *
      * @return {@code false}.
      */
     @Override
@@ -143,7 +149,25 @@ public class PaperGameProvider implements GameProvider {
 
         // Skip paperclip loading i.f.f. we are in a dev env, this enables us to not have paperclip.jar in run/
         // when doing an IDE run
-        if(!launcher.isDevelopment()) {
+        if (launcher.isDevelopment()) {
+            classifier.done(); // early finish classifier
+            final var gameJars = classifier.getClassifications().get(LibraryCategory.GAME);
+
+            if (gameJars.isEmpty()) {
+                return false; // somehow, we could not find paper in the dev env... bail.
+            }
+
+            try (
+                final var fs = FileSystems.newFileSystem(gameJars.get(0));
+                final var reader = Files.newBufferedReader(fs.getPath("version.json"))
+            ) {
+                final var object = new Gson().fromJson(reader, JsonObject.class);
+                this.versionInfo = new VersionInfo(object.get("id").getAsString(), null);
+            } catch (IOException e) {
+                Log.error(LogCategory.DISCOVERY, "failed to find version.json from game jar", e);
+                return false;
+            }
+        } else {
             final var paperclipResult = PaperclipRunner.launchPaperclip(); // Invoke paperclip
 
             if (paperclipResult.isEmpty()) {
@@ -162,9 +186,9 @@ public class PaperGameProvider implements GameProvider {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        }
 
-        classifier.done();
+            classifier.done();
+        }
 
         return true;
     }
