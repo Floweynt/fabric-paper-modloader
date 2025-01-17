@@ -1,11 +1,8 @@
 package com.floweytf.fabricpaperloader;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Objects;
-import java.util.zip.ZipError;
-import java.util.zip.ZipFile;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.impl.util.UrlUtil;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
@@ -13,11 +10,14 @@ import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.util.ASMifier;
+import org.spongepowered.asm.launch.MixinBootstrap;
 
 public enum LibraryType {
-    BUNDLED_FABRIC_LOADER(LibraryCategory.LAUNCHER, UrlUtil.LOADER_CODE_SOURCE),
+    SELF(LibraryCategory.LAUNCHER, UrlUtil.getCodeSource(LibraryType.class)),
     PAPER_MC(LibraryCategory.GAME, "org/bukkit/craftbukkit/Main.class"),
-    OW2_ASM(LibraryCategory.SYSTEM, ClassReader.class, Analyzer.class, Remapper.class, ClassNode.class, ASMifier.class);
+    FABsRIC_LOADER(LibraryCategory.SYSTEM, FabricLoader.class),
+    OW2_ASM(LibraryCategory.SYSTEM, ClassReader.class, Analyzer.class, Remapper.class, ClassNode.class, ASMifier.class),
+    MIXIN(LibraryCategory.SYSTEM, MixinBootstrap.class);
 
     public final LibraryCategory category;
 

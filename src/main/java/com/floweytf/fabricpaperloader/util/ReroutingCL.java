@@ -6,7 +6,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import org.objectweb.asm.*;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 /**
  * Budget @Redirect
@@ -60,7 +65,8 @@ public class ReroutingCL extends ClassLoader {
         );
     }
 
-    public ReroutingCL rerouteS(Class<?> old, String oldName, Class<?> newOwner, String newName, Class<?> returnType, Class<?>... argumentTypes) {
+    public ReroutingCL rerouteS(Class<?> old, String oldName, Class<?> newOwner, String newName, Class<?> returnType,
+                                Class<?>... argumentTypes) {
         final var desc = buildDesc(returnType, List.of(argumentTypes));
 
         entries.put(
@@ -71,7 +77,8 @@ public class ReroutingCL extends ClassLoader {
         return this;
     }
 
-    public ReroutingCL rerouteI(Class<?> oldClass, String oldName, Class<?> newClass, String newName, Class<?> returnType, Class<?>... argumentTypes) {
+    public ReroutingCL rerouteI(Class<?> oldClass, String oldName, Class<?> newClass, String newName,
+                                Class<?> returnType, Class<?>... argumentTypes) {
         final var oldDesc = buildDesc(returnType, List.of(argumentTypes));
         final var newDesc = buildDesc(
             returnType,

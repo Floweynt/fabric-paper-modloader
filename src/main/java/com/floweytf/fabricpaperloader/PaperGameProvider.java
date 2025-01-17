@@ -15,6 +15,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.fabricmc.loader.impl.FormattedException;
 import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
@@ -88,7 +90,9 @@ public class PaperGameProvider implements GameProvider {
     public Collection<BuiltinMod> getBuiltinMods() {
         final var metadata = new BuiltinModMetadata.Builder(getGameId(), getNormalizedGameVersion())
             .setName(getGameName())
-            .addAuthor("Paper Dev Team", Map.of())
+            .addAuthor("Mojang", Map.of())
+            .addContributor("Paper Development Team", Map.of())
+            .addContributor("Flowey", Map.of())
             .setContact(new ContactInformationImpl(Map.of()))
             .setDescription("Paper minecraft server, with mixin support with fabric-loader");
 
@@ -129,6 +133,11 @@ public class PaperGameProvider implements GameProvider {
         return false;
     }
 
+    /**
+     * Not legacy, so we can return false.
+     *
+     * @return {@code false}
+     */
     @Override
     public boolean requiresUrlClassLoader() {
         return false;
@@ -151,7 +160,7 @@ public class PaperGameProvider implements GameProvider {
         // when doing an IDE run
         if (launcher.isDevelopment()) {
             classifier.done(); // early finish classifier
-            final var gameJars = classifier.getClassifications().get(LibraryCategory.GAME);
+            final var gameJars = classifier.getGameJars();
 
             if (gameJars.isEmpty()) {
                 return false; // somehow, we could not find paper in the dev env... bail.
@@ -193,13 +202,19 @@ public class PaperGameProvider implements GameProvider {
         return true;
     }
 
-    /*
-     * Add additional configuration to the FabricLauncher, but do not launch your
-     * app.
+    /**
+     * Configure classpath stuff.
+     *
+     * @param launcher the launcher
      */
     @Override
     public void initialize(FabricLauncher launcher) {
-        launcher.setValidParentClassPath(classifier.getLauncherJars());
+        launcher.setValidParentClassPath(
+            Stream.concat(
+                classifier.getLauncherJars().stream(),
+                classifier.getSystemJars().stream()
+            ).collect(Collectors.toUnmodifiableSet())
+        );
         TRANSFORMER.locateEntrypoints(launcher, classifier.getGameJars());
     }
 

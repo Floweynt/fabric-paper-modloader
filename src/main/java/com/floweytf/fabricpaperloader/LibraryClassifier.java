@@ -3,13 +3,18 @@ package com.floweytf.fabricpaperloader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.zip.ZipError;
 import java.util.zip.ZipFile;
 import net.fabricmc.loader.impl.util.log.Log;
 import net.fabricmc.loader.impl.util.log.LogCategory;
 import net.fabricmc.loader.impl.util.log.LogLevel;
 
+// TODO: use fabric's own LibClassifier instead of reinventing the wheel
 public class LibraryClassifier {
     private final Map<LibraryCategory, List<Path>> classifications = new EnumMap<>(LibraryCategory.class);
     private final boolean shouldLog = Log.shouldLog(LogLevel.DEBUG, LogCategory.LIB_CLASSIFICATION);

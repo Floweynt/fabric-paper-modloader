@@ -1,0 +1,30 @@
+[versions]
+annotations = "24.0.0"
+fabric-loader = "0.16.10"
+access-widener = "2.1.0"
+asm = "9.7.1"
+mixin = "0.15.5+mixin.0.8.7"
+mixin-extras = "0.4.1"
+guava = "21.0"
+gson = "2.2.4"
+
+[libraries]
+annotations = { group = "org.jetbrains", name = "annotations", version.ref = "annotations" }
+fabric-loader = { group = "net.fabricmc", name = "fabric-loader", version.ref = "fabric-loader" }
+access-widener = { group = "net.fabricmc", name = "access-widener", version.ref = "access-widener" }
+
+asm = { group = "org.ow2.asm", name = "asm", version.ref = "asm" }
+asm-analysis = { group = "org.ow2.asm", name = "asm-analysis", version.ref = "asm" }
+asm-commons = { group = "org.ow2.asm", name = "asm-commons", version.ref = "asm" }
+asm-tree = { group = "org.ow2.asm", name = "asm-tree", version.ref = "asm" }
+asm-util = { group = "org.ow2.asm", name = "asm-util", version.ref = "asm" }
+
+mixin = { group = "net.fabricmc", name = "sponge-mixin", version.ref = "mixin" }
+mixin-extras = { group = "io.github.llamalad7", name = "mixinextras-fabric", version.ref = "mixin-extras" }
+
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+
+[bundles]
+asm = ["asm", "asm-analysis", "asm-commons", "asm-tree", "asm-util"]
+fabric = ["fabric-loader", "access-widener", "mixin"]
