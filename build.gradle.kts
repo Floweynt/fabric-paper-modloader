@@ -15,10 +15,8 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-version = "1.0.3"
+version = "2.0.0+fabric.${libs.versions.fabric.loader.get()}"
 group = "com.floweytf.fabricpaperloader"
-
-val shadowImplementation: Configuration by configurations.creating
 
 dependencies {
     compileOnly(libs.annotations)

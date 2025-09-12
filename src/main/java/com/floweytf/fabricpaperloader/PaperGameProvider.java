@@ -14,6 +14,7 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -123,14 +124,9 @@ public class PaperGameProvider implements GameProvider {
         return getLaunchDirectory(arguments);
     }
 
-    /**
-     * Paper was technically obf-ed, but we can simply remap mods. Post 1.20.5, paper is mojmapped.
-     *
-     * @return {@code false}.
-     */
     @Override
-    public boolean isObfuscated() {
-        return false;
+    public Set<BuiltinTransform> getBuiltinTransforms(String className) {
+        return Set.of(BuiltinTransform.CLASS_TWEAKS);
     }
 
     /**
