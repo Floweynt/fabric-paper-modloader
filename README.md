@@ -25,7 +25,7 @@ plugins {
     `java-library`
     `maven-publish`
     id("com.github.johnrengelman.shadow")
-    id("com.playmonumenta.paperweight-aw.userdev") version "1.+" // from https://maven.playmonumenta.com/releases/
+    id("com.playmonumenta.paperweight-aw.userdev") version "2.0.0-build.5+2.0.0-beta.18" // from https://maven.playmonumenta.com/releases/
 }
 
 val include by configurations.creating
@@ -33,13 +33,15 @@ val include by configurations.creating
 configurations.getByName("implementation").extendsFrom(include)
 configurations.getByName("implementation").extendsFrom(configurations.getByName("mojangMappedServerRuntime"))
 
+paperweight.reobfArtifactConfiguration = ReobfArtifactConfiguration.REOBF_PRODUCTION
+
 dependencies {
     paperweight.paperDevBundle("1.20.4-R0.1-SNAPSHOT")
 
-    implementation("io.github.llamalad7:mixinextras-common:0.4.0")
-    implementation("com.floweytf.fabricpaperloader:fabric-paper-loader:1.0.1")
+    implementation("io.github.llamalad7:mixinextras-common:0.5.0")
+    implementation("com.floweytf.fabricpaperloader:fabric-paper-loader:2.0.0+fabric.0.17.2")
 
-    remapper("net.fabricmc:tiny-remapper:0.10.3") {
+    remapper("net.fabricmc:tiny-remapper:0.11.1") {
         artifact {
             classifier = "fat"
         }
@@ -53,16 +55,10 @@ tasks {
 
     shadowJar {
         archiveClassifier.set("dev")
-        configurations = listOf(include)
     }
 
     reobfJar {
-        remapperArgs.add("--mixin")
-        finalizedBy("remapAccessWidener")
-    }
-
-    build {
-        dependsOn(reobfJar)
+		remapperArgs = TinyRemapper.createArgsList() + "--mixin"
     }
 }
 ```
