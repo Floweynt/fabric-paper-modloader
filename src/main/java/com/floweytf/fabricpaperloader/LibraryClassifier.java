@@ -3,28 +3,49 @@ package com.floweytf.fabricpaperloader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.zip.ZipError;
 import java.util.zip.ZipFile;
+
+import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.impl.util.log.Log;
 import net.fabricmc.loader.impl.util.log.LogCategory;
 import net.fabricmc.loader.impl.util.log.LogLevel;
+import net.fabricmc.loader.impl.util.version.VersionParser;
 
 // TODO: use fabric's own LibClassifier instead of reinventing the wheel
 public class LibraryClassifier {
     private final Map<LibraryCategory, List<Path>> classifications = new EnumMap<>(LibraryCategory.class);
     private final boolean shouldLog = Log.shouldLog(LogLevel.DEBUG, LogCategory.LIB_CLASSIFICATION);
+    private final Map<Path, Version> versionMap = new HashMap<>();
     private boolean isDone = false;
 
     public void addPaths(Path... paths) {
         for (Path path : paths) {
             final var type = classifySingle(path);
-            classifications.computeIfAbsent(type, ignored -> new ArrayList<>()).add(path);
+            if (type == null) {
+                continue;
+            }
+            try {
+                Version version = VersionParser.parseSemantic(path.getParent().getFileName().toString());
+                Path libName = path.subpath(2, path.getNameCount() - 2);
+                if (versionMap.containsKey(libName)) {
+                    int compare = version.compareTo(versionMap.get(libName));
+                    if (compare > 0) {
+                        Path olderVersionPath = Path.of(path.toString().replace(version.getFriendlyString(), versionMap.get(libName).getFriendlyString()));
+                        versionMap.put(libName, version);
+                        classifications.get(type).remove(olderVersionPath);
+                    } else {
+                        continue;
+                    }
+                } else {
+                    versionMap.put(libName, version);
+                }
 
+            } catch (Exception e) {
+                Log.warn(LogCategory.LIB_CLASSIFICATION, "failed to parse version from path %s", path);
+            }
+            classifications.computeIfAbsent(type, ignored -> new ArrayList<>()).add(path);
             if (shouldLog) {
                 Log.debug(LogCategory.LIB_CLASSIFICATION, "classified %s as %s", path, type);
             }
@@ -49,6 +70,10 @@ public class LibraryClassifier {
                 }
             }
         } else {
+            if (!path.toString().endsWith(".jar")) {
+                return null;
+            }
+
             try (ZipFile zf = new ZipFile(path.toFile())) {
                 for (var type : LibraryType.values()) {
                     if (Objects.equals(type.path, path)) {
