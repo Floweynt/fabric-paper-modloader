@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ import net.fabricmc.loader.impl.util.log.LogCategory;
  * A utility class for containing annoying procedural logic required for running paperclip.
  */
 public class PaperclipRunner {
+    private static Path paperclipPath = Path.of("");
     /**
      * Finds paperclip with Fabric's tools.
      *
@@ -128,7 +130,7 @@ public class PaperclipRunner {
                     Log.error(LogCategory.GAME_PROVIDER, "Paperclip exited with a non-zero code");
                     return Optional.empty();
                 }
-
+                paperclipPath = paperclipLocateResult.get().path;
                 return Optional.of(version);
             } catch (Exception e) {
                 Log.error(LogCategory.GAME_PROVIDER, "Exception thrown while executing paperclip", e);
@@ -183,4 +185,9 @@ public class PaperclipRunner {
 
         return Boolean.getBoolean(name);
     }
+
+    public static Path getPaperclipPath() {
+        return paperclipPath;
+    }
+
 }

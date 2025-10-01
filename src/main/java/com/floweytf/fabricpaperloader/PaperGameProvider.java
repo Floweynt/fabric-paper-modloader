@@ -4,20 +4,24 @@ import com.floweytf.fabricpaperloader.paperclip.PaperclipRunner;
 import com.floweytf.fabricpaperloader.paperclip.VersionInfo;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
 import net.fabricmc.loader.impl.FormattedException;
 import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
@@ -46,10 +50,8 @@ public class PaperGameProvider implements GameProvider {
         return Paths.get(arguments.getOrDefault(PROPERTY_PAPER_DIRECTORY, "."));
     }
 
-    private void withFiles(Path path, Consumer<Path> consumer) throws IOException {
-        try (final var files = Files.walk(path)) {
-            files.filter(Files::isRegularFile).forEach(consumer);
-        }
+    private void withFiles(Path[] path, Consumer<Path> consumer) throws IOException {
+        Arrays.stream(path).filter(Files::isRegularFile).forEach(consumer);
     }
 
     /**
@@ -184,9 +186,9 @@ public class PaperGameProvider implements GameProvider {
             // Scan runtime stuff
             try {
                 if (!launcher.isDevelopment()) {
-                    withFiles(getLaunchDirectory().resolve("libraries"), classifier::addPaths);
-                    // TODO: handle this properly
-                    withFiles(getLaunchDirectory().resolve("versions"), classifier::addPaths);
+                    ZipFile paperClipEntry = new ZipFile(PaperclipRunner.getPaperclipPath().toFile());
+                    withFiles(getLibraryPaths(paperClipEntry, "libraries.list", "libraries"), classifier::addPaths);
+                    withFiles(getLibraryPaths(paperClipEntry, "versions.list", "versions"), classifier::addPaths);
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -197,6 +199,26 @@ public class PaperGameProvider implements GameProvider {
 
         return true;
     }
+
+    /**
+     * Get Paper / Minecraft library paths.
+     * Plugin downloads their libraries in the libraries folder. it can use same library but different version.
+     * on runtime, it will cause issue. but on bootstrap, it can cause classpath conflict.
+     *
+     * @return filtered library paths.
+     */
+    private static Path[] getLibraryPaths(ZipFile paperClip, String fileToRead, String targetDir) {
+        try (InputStream is = paperClip.getInputStream(new ZipEntry("META-INF/" + fileToRead))) {
+            Path libraryPath = Path.of(targetDir);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            // We dont need hash / url
+            return reader.lines().map(line -> libraryPath.resolve(line.split("\t")[2])).toArray(Path[]::new);
+        } catch (Exception e) {
+            Log.error(LogCategory.GAME_PROVIDER, "Failed to read library paths from paperclip", e);
+            return new Path[0];
+        }
+    }
+
 
     /**
      * Configure classpath stuff.
