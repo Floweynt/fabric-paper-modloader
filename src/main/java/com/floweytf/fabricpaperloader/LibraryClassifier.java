@@ -17,7 +17,6 @@ import net.fabricmc.loader.impl.util.version.VersionParser;
 public class LibraryClassifier {
     private final Map<LibraryCategory, List<Path>> classifications = new EnumMap<>(LibraryCategory.class);
     private final boolean shouldLog = Log.shouldLog(LogLevel.DEBUG, LogCategory.LIB_CLASSIFICATION);
-    private final Map<Path, Version> versionMap = new HashMap<>();
     private boolean isDone = false;
 
     public void addPaths(Path... paths) {
@@ -25,25 +24,6 @@ public class LibraryClassifier {
             final var type = classifySingle(path);
             if (type == null) {
                 continue;
-            }
-            try {
-                Version version = VersionParser.parseSemantic(path.getParent().getFileName().toString());
-                Path libName = path.subpath(2, path.getNameCount() - 2);
-                if (versionMap.containsKey(libName)) {
-                    int compare = version.compareTo(versionMap.get(libName));
-                    if (compare > 0) {
-                        Path olderVersionPath = Path.of(path.toString().replace(version.getFriendlyString(), versionMap.get(libName).getFriendlyString()));
-                        versionMap.put(libName, version);
-                        classifications.get(type).remove(olderVersionPath);
-                    } else {
-                        continue;
-                    }
-                } else {
-                    versionMap.put(libName, version);
-                }
-
-            } catch (Exception e) {
-                Log.warn(LogCategory.LIB_CLASSIFICATION, "failed to parse version from path %s", path);
             }
             classifications.computeIfAbsent(type, ignored -> new ArrayList<>()).add(path);
             if (shouldLog) {
