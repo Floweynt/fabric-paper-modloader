@@ -7,11 +7,9 @@ import java.util.*;
 import java.util.zip.ZipError;
 import java.util.zip.ZipFile;
 
-import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.impl.util.log.Log;
 import net.fabricmc.loader.impl.util.log.LogCategory;
 import net.fabricmc.loader.impl.util.log.LogLevel;
-import net.fabricmc.loader.impl.util.version.VersionParser;
 
 // TODO: use fabric's own LibClassifier instead of reinventing the wheel
 public class LibraryClassifier {
