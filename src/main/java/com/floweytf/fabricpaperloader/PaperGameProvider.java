@@ -169,7 +169,7 @@ public class PaperGameProvider implements GameProvider {
                 final var reader = Files.newBufferedReader(fs.getPath("version.json"))
             ) {
                 final var object = new Gson().fromJson(reader, JsonObject.class);
-                this.versionInfo = new VersionInfo(object.get("id").getAsString(), null);
+                this.versionInfo = new VersionInfo(object.get("id").getAsString(), null, null, null);
             } catch (IOException e) {
                 Log.error(LogCategory.DISCOVERY, "failed to find version.json from game jar", e);
                 return false;
@@ -186,9 +186,8 @@ public class PaperGameProvider implements GameProvider {
             // Scan runtime stuff
             try {
                 if (!launcher.isDevelopment()) {
-                    ZipFile paperClipEntry = new ZipFile(PaperclipRunner.getPaperclipPath().toFile());
-                    withFiles(getLibraryPaths(paperClipEntry, "libraries.list", "libraries"), classifier::addPaths);
-                    withFiles(getLibraryPaths(paperClipEntry, "versions.list", "versions"), classifier::addPaths);
+                    withFiles(versionInfo.requiredLibraries(), classifier::addPaths);
+                    classifier.addPaths(versionInfo.serverJarPath());
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -199,26 +198,6 @@ public class PaperGameProvider implements GameProvider {
 
         return true;
     }
-
-    /**
-     * Get Paper / Minecraft library paths.
-     * Plugin downloads their libraries in the libraries folder. it can use same library but different version.
-     * on runtime, it will cause issue. but on bootstrap, it can cause classpath conflict.
-     *
-     * @return filtered library paths.
-     */
-    private static Path[] getLibraryPaths(ZipFile paperClip, String fileToRead, String targetDir) {
-        try (InputStream is = paperClip.getInputStream(new ZipEntry("META-INF/" + fileToRead))) {
-            Path libraryPath = Path.of(targetDir);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-            // We dont need hash / url
-            return reader.lines().map(line -> libraryPath.resolve(line.split("\t")[2])).toArray(Path[]::new);
-        } catch (Exception e) {
-            Log.error(LogCategory.GAME_PROVIDER, "Failed to read library paths from paperclip", e);
-            return new Path[0];
-        }
-    }
-
 
     /**
      * Configure classpath stuff.
