@@ -3,13 +3,10 @@ package com.floweytf.fabricpaperloader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.zip.ZipError;
 import java.util.zip.ZipFile;
+
 import net.fabricmc.loader.impl.util.log.Log;
 import net.fabricmc.loader.impl.util.log.LogCategory;
 import net.fabricmc.loader.impl.util.log.LogLevel;
@@ -23,8 +20,10 @@ public class LibraryClassifier {
     public void addPaths(Path... paths) {
         for (Path path : paths) {
             final var type = classifySingle(path);
+            if (type == null) {
+                continue;
+            }
             classifications.computeIfAbsent(type, ignored -> new ArrayList<>()).add(path);
-
             if (shouldLog) {
                 Log.debug(LogCategory.LIB_CLASSIFICATION, "classified %s as %s", path, type);
             }
@@ -49,6 +48,10 @@ public class LibraryClassifier {
                 }
             }
         } else {
+            if (!path.toString().endsWith(".jar")) {
+                return null;
+            }
+
             try (ZipFile zf = new ZipFile(path.toFile())) {
                 for (var type : LibraryType.values()) {
                     if (Objects.equals(type.path, path)) {

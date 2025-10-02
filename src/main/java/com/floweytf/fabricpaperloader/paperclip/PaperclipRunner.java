@@ -2,10 +2,11 @@ package com.floweytf.fabricpaperloader.paperclip;
 
 import com.floweytf.fabricpaperloader.util.ReroutingCL;
 import com.floweytf.fabricpaperloader.util.Utils;
-import java.io.IOException;
-import java.io.PrintStream;
+
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,6 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.stream.Collectors;
+
 import net.fabricmc.loader.impl.game.GameProviderHelper;
 import net.fabricmc.loader.impl.util.SystemProperties;
 import net.fabricmc.loader.impl.util.log.Log;
@@ -116,7 +118,7 @@ public class PaperclipRunner {
             );
 
             final var hash = reader.next();
-            final var version = new VersionInfo(reader.next(), hash);
+            final var version = new VersionInfo(reader.next(), hash, getLibraryPaths(classLoader), Path.of("versions").resolve(reader.next()));
 
             Log.info(LogCategory.GAME_PROVIDER, "Found paper %s", version);
             Log.info(LogCategory.GAME_PROVIDER, "Launching paperclip to generate patched jars");
@@ -128,7 +130,6 @@ public class PaperclipRunner {
                     Log.error(LogCategory.GAME_PROVIDER, "Paperclip exited with a non-zero code");
                     return Optional.empty();
                 }
-
                 return Optional.of(version);
             } catch (Exception e) {
                 Log.error(LogCategory.GAME_PROVIDER, "Exception thrown while executing paperclip", e);
@@ -138,6 +139,24 @@ public class PaperclipRunner {
         }
 
         return Optional.empty();
+    }
+
+    /**
+     * Get Paper / Minecraft library paths.
+     * Plugin downloads their libraries in the libraries folder. it can use same library but different version.
+     * on runtime, it will cause issue. but on bootstrap, it can cause classpath conflict.
+     *
+     * @return filtered library paths.
+     */
+    private static Path[] getLibraryPaths(ClassLoader loader) {
+        try (final var is = new BufferedReader(new InputStreamReader(Objects.requireNonNull(loader.getResourceAsStream("META-INF/libraries.list"))))) {
+            Path libraryPath = Path.of("libraries");
+            // We dont need hash / url
+            return is.lines().map(line -> libraryPath.resolve(line.split("\t")[2])).toArray(Path[]::new);
+        } catch (Exception e) {
+            Log.error(LogCategory.GAME_PROVIDER, "Failed to read library paths from paperclip", e);
+            return new Path[0];
+        }
     }
 
     /**

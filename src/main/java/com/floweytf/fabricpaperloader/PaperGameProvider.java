@@ -4,6 +4,7 @@ import com.floweytf.fabricpaperloader.paperclip.PaperclipRunner;
 import com.floweytf.fabricpaperloader.paperclip.VersionInfo;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -11,13 +12,11 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import net.fabricmc.loader.impl.FormattedException;
 import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
@@ -46,10 +45,8 @@ public class PaperGameProvider implements GameProvider {
         return Paths.get(arguments.getOrDefault(PROPERTY_PAPER_DIRECTORY, "."));
     }
 
-    private void withFiles(Path path, Consumer<Path> consumer) throws IOException {
-        try (final var files = Files.walk(path)) {
-            files.filter(Files::isRegularFile).forEach(consumer);
-        }
+    private void withFiles(Path[] path, Consumer<Path> consumer) throws IOException {
+        Arrays.stream(path).filter(Files::isRegularFile).forEach(consumer);
     }
 
     /**
@@ -167,7 +164,7 @@ public class PaperGameProvider implements GameProvider {
                 final var reader = Files.newBufferedReader(fs.getPath("version.json"))
             ) {
                 final var object = new Gson().fromJson(reader, JsonObject.class);
-                this.versionInfo = new VersionInfo(object.get("id").getAsString(), null);
+                this.versionInfo = new VersionInfo(object.get("id").getAsString(), null, null, null);
             } catch (IOException e) {
                 Log.error(LogCategory.DISCOVERY, "failed to find version.json from game jar", e);
                 return false;
@@ -184,9 +181,8 @@ public class PaperGameProvider implements GameProvider {
             // Scan runtime stuff
             try {
                 if (!launcher.isDevelopment()) {
-                    withFiles(getLaunchDirectory().resolve("libraries"), classifier::addPaths);
-                    // TODO: handle this properly
-                    withFiles(getLaunchDirectory().resolve("versions"), classifier::addPaths);
+                    withFiles(versionInfo.requiredLibraries(), classifier::addPaths);
+                    classifier.addPaths(versionInfo.serverJarPath());
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
