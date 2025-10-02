@@ -180,10 +180,8 @@ public class PaperGameProvider implements GameProvider {
 
             // Scan runtime stuff
             try {
-                if (!launcher.isDevelopment()) {
-                    withFiles(versionInfo.requiredLibraries(), classifier::addPaths);
-                    classifier.addPaths(versionInfo.serverJarPath());
-                }
+                withFiles(versionInfo.requiredLibraries(), classifier::addPaths);
+                classifier.addPaths(versionInfo.serverJarPath());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

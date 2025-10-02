@@ -118,7 +118,12 @@ public class PaperclipRunner {
             );
 
             final var hash = reader.next();
-            final var version = new VersionInfo(reader.next(), hash, getLibraryPaths(classLoader), Path.of("versions").resolve(reader.next()));
+            final var version = new VersionInfo(
+                reader.next(),
+                hash,
+                getLibraryPaths(classLoader),
+                Path.of("versions").resolve(reader.next())
+            );
 
             Log.info(LogCategory.GAME_PROVIDER, "Found paper %s", version);
             Log.info(LogCategory.GAME_PROVIDER, "Launching paperclip to generate patched jars");
