@@ -19,21 +19,23 @@ There is no toolchain. The best option currently is to just use paperweight.
 
 It is relatively easy to create IDE runs, even though there's no native gradle plugin like loom to autogen this for you.
 
-Example buildscript:
+Example buildscript (`build.gradle.kts`):
 ```kts
+import io.papermc.paperweight.tasks.TinyRemapper
+import io.papermc.paperweight.userdev.ReobfArtifactConfiguration
+
 plugins {
     `java-library`
     `maven-publish`
-    id("com.github.johnrengelman.shadow")
+    id("com.gradleup.shadow") version "9.3.2"
     id("com.playmonumenta.paperweight-aw.userdev") version "2.0.0-build.5+2.0.0-beta.18" // from https://maven.playmonumenta.com/releases/
 }
 
-val include by configurations.creating
-
-configurations.getByName("implementation").extendsFrom(include)
-configurations.getByName("implementation").extendsFrom(configurations.getByName("mojangMappedServerRuntime"))
-
 paperweight.reobfArtifactConfiguration = ReobfArtifactConfiguration.REOBF_PRODUCTION
+
+repositories {
+    maven("https://maven.playmonumenta.com/releases/")
+}
 
 dependencies {
     paperweight.paperDevBundle("1.20.4-R0.1-SNAPSHOT")
@@ -48,17 +50,38 @@ dependencies {
     }
 }
 
+val include: Configuration by configurations.creating
+val shade: Configuration by configurations.creating
+
+shade.extendsFrom(include)
+configurations {
+    implementation { extendsFrom(include) }
+    runtimeClasspath { extendsFrom(mojangMappedServerRuntime.get()) }
+    runtimeClasspath { extendsFrom(mojangMappedServer.get()) }
+}
+
 tasks {
     jar {
         archiveClassifier.set("dev")
     }
 
     shadowJar {
+        configurations = listOf(shade)
         archiveClassifier.set("dev")
     }
 
     reobfJar {
-		remapperArgs = TinyRemapper.createArgsList() + "--mixin"
+        remapperArgs = TinyRemapper.createArgsList() + "--mixin"
+    }
+}
+```
+
+`settings.gradle.kts`:
+```kts
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven("https://maven.playmonumenta.com/releases/")
     }
 }
 ```
