@@ -1,3 +1,7 @@
+import java.util.jar.Attributes
+import java.util.jar.JarFile
+import java.util.jar.Manifest
+
 plugins {
     `java-library`
     `maven-publish`
@@ -15,7 +19,7 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-version = "2.0.1+fabric.${libs.versions.fabric.loader.get()}"
+version = "2.1.0+fabric.${libs.versions.fabric.loader.get()}"
 group = "com.floweytf.fabricpaperloader"
 
 dependencies {
@@ -52,6 +56,32 @@ tasks {
 
     build {
         dependsOn(shadowJar)
+    }
+
+    shadowJar {
+        manifest {
+            val excluded = setOf("Manifest-Version", "Main-Class")
+            val artifacts =
+                project.configurations.shadow.get()
+                    .resolvedConfiguration
+                    .resolvedArtifacts
+
+            artifacts.forEach { artifact ->
+                JarFile(artifact.file).use { jar ->
+                    val depManifest = jar.manifest ?: return@forEach
+
+                    if(artifact.moduleVersion.id.group != "org.ow2.asm") {
+                        return@use
+                    }
+
+                    val attributeMap = depManifest.mainAttributes
+                        .mapKeys { (k, v) -> k.toString() }
+                        .filterKeys { !excluded.contains(it) }
+
+                    attributes(attributeMap, "org/objectweb/asm/")
+                }
+            }
+        }
     }
 }
 

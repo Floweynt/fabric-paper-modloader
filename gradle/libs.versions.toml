@@ -1,9 +1,9 @@
 [versions]
 annotations = "24.0.0"
-fabric-loader = "0.17.2"
+fabric-loader = "0.18.4"
 access-widener = "2.1.0"
-asm = "9.8"
-mixin = "0.16.3+mixin.0.8.7"
+asm = "9.9"
+mixin = "0.17.0+mixin.0.8.7"
 mixin-extras = "0.5.0"
 guava = "21.0"
 gson = "2.2.4"
