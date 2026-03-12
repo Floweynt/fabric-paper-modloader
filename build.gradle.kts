@@ -1,6 +1,4 @@
-import java.util.jar.Attributes
 import java.util.jar.JarFile
-import java.util.jar.Manifest
 
 plugins {
     `java-library`
@@ -70,7 +68,7 @@ tasks {
                 JarFile(artifact.file).use { jar ->
                     val depManifest = jar.manifest ?: return@forEach
 
-                    if(artifact.moduleVersion.id.group != "org.ow2.asm") {
+                    if (artifact.moduleVersion.id.group != "org.ow2.asm") {
                         return@use
                     }
 
